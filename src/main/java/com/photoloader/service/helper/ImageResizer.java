@@ -16,7 +16,7 @@ public class ImageResizer {
             BufferedImage image = Thumbnails.of(new ByteArrayInputStream(originalImage)).scale(1).asBufferedImage();
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             Thumbnails.of(image)
-                    .size(1500, 1200)
+                    .size(900, 1200)
                     .outputFormat("JPEG")
                     .outputQuality(1)
                     .toOutputStream(outputStream);

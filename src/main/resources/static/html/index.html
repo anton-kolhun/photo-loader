@@ -26,6 +26,9 @@
            $('#img').attr("src", 'data:image/png;base64, ' + data);
            $('#loader').prop('disabled', false);
        })
+       .fail(function() {
+          $('#loader').prop('disabled', false);
+       })
     }
     $( document ).ready(function() {
        loadImage()
