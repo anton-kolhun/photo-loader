@@ -12,21 +12,28 @@
 
 <body>
 <div class="container">
-    <button class="btn btn-primary btn-lg" onclick="loadImage()">Хочу ще!</button>
-</div>
-
-<div id="img_holder">
-    <img id="img" alt="memory">
+    <button id="loader" class="btn btn-primary btn-lg btn-block" onclick="loadImage()">Хочу ще!</button>
+    <br/>
+    <div id="img_holder">
+        <img id="img" alt="memory">
+    </div>
 </div>
 </body>
 <script type="text/javascript">
     function loadImage() {
-       $.get("image", function(data, status){
-           $("#img").attr("src", "data:image/png;base64, " + data);
+       $('#loader').prop('disabled', true);
+       $.get('image', function(data, status){
+           $('#img').attr("src", 'data:image/png;base64, ' + data);
+           $('#loader').prop('disabled', false);
+       })
+       .fail(function() {
+          $('#loader').prop('disabled', false);
        })
     }
     $( document ).ready(function() {
        loadImage()
      });
+
+
 </script>
 </html>
