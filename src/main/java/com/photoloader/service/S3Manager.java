@@ -20,11 +20,11 @@ import java.util.stream.Collectors;
 @Service
 public class S3Manager {
 
-    private AmazonS3 awsS3Client;
+    private final AmazonS3 awsS3Client;
 
-    private TransferManager transferManager;
+    private final TransferManager transferManager;
 
-    private String bucket;
+    private final String bucket;
 
     public S3Manager(AmazonS3 awsS3Client, @Value("${s3.bucketName}") String bucketName) {
         this.awsS3Client = awsS3Client;
