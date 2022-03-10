@@ -7,14 +7,15 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 @Component
 public class ImageResizer {
 
     public byte[] resizeImage(byte[] originalImage) {
-        try {
-            BufferedImage image = Thumbnails.of(new ByteArrayInputStream(originalImage)).scale(1).asBufferedImage();
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+             InputStream is = new ByteArrayInputStream(originalImage)) {
+            BufferedImage image = Thumbnails.of(is).scale(1).asBufferedImage();
             Thumbnails.of(image)
                     .size(900, 1200)
                     .outputFormat("JPEG")
