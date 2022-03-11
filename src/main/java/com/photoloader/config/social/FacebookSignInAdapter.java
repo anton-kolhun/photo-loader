@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-//@Component
 @Slf4j
 public class FacebookSignInAdapter implements SignInAdapter {
     private final Set<UserData> authorizedUsers;
