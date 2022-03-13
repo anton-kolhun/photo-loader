@@ -78,7 +78,7 @@ public class S3Manager {
     }
 
     @Scheduled(cron = "0 0 0/1 * * *")
-    private void updateAllFilesCache() {
+    public void updateAllFilesCache() {
         List<S3ObjectSummary> files = awsS3Client.listObjects(bucket).getObjectSummaries();
         try {
             allFilesLock.lock();
