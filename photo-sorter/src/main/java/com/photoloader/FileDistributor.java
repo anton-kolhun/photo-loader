@@ -42,7 +42,6 @@ public class FileDistributor {
         amazonS3.copyObject(bucketName, file, bucketName, localDateTime.getYear() + "/" + file);
         log.info("copied file = {} to {} ", file, localDateTime.getYear());
         amazonS3.deleteObject(bucketName, file);
-        s3Manager.transferManager.shutdownNow();
       } catch (Exception e) {
         log.info("error occurred while copying {}", s3ObjectSummary.getKey(), e);
       }
