@@ -1,4 +1,6 @@
 /target/
+/photo-sorter/target/
+/photo-webapp/target/
 !.mvn/wrapper/maven-wrapper.jar
 
 ### STS ###
