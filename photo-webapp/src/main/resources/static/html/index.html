@@ -44,6 +44,9 @@
          url = 'image?year=' + year;
          }
        $.get(url, function(data, status){
+           if (data.includes('login')) {
+             location.href='login'
+           }
            $('#img').attr("src", 'data:image/png;base64, ' + data);
            $('#loader').prop('disabled', false);
        })
