@@ -37,12 +37,12 @@
     function loadImage() {
        $('#loader').prop('disabled', true);
        var year = $('#year').val();
-       var url
-       if (year == 'all') {
-         url = 'image';
-       } else {
-         url = 'image?year=' + year;
-         }
+       var url = 'image';
+       url = url + '?height=' + window.screen.height;
+       url = url + '&width=' + window.screen.width;
+       if (year != 'all') {
+         url = url + '&year=' + year;
+       }
        $.get(url, function(data, status){
            if (data.includes('login')) {
              location.href='login'
@@ -55,8 +55,9 @@
        })
     }
     $( document ).ready(function() {
-       loadImage()
+       loadImage();
      });
+
 
 
 
