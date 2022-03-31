@@ -71,7 +71,8 @@ public class ImageProcessorService {
       counter++;
     }
     if (counter == 10000) {
-      index = currentInfo.getUsedIndexes().iterator().next();
+      throw new RuntimeException("no further images available for a given search criteria:"
+          + " year =" + year);
     }
     return index;
   }
