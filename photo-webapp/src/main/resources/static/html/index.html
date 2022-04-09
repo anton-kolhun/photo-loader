@@ -27,6 +27,8 @@
       <option value="2015">2015</option>
       <option value="2014">2014</option>
     </select>
+    <div id="spinner" style="width: 5rem; height: 5rem;" class="spinner-border text-primary" role="status">
+    </div>
   </div>
   <div id="img_holder">
     <img id="img" alt="memory">
@@ -36,6 +38,7 @@
 <script type="text/javascript">
     function loadImage() {
        $('#loader').prop('disabled', true);
+       $('#spinner').show();
        var year = $('#year').val();
        var url = 'image';
        url = url + '?height=' + window.screen.height;
@@ -49,14 +52,17 @@
            }
            $('#img').attr("src", 'data:image/png;base64, ' + data);
            $('#loader').prop('disabled', false);
+           $('#spinner').hide();
        })
        .fail(function() {
           $('#loader').prop('disabled', false);
+          $('#spinner').hide();
        })
     }
     $( document ).ready(function() {
        loadImage();
      });
+
 
 
 
