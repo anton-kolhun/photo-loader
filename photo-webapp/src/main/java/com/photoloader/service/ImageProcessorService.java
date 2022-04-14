@@ -1,5 +1,6 @@
 package com.photoloader.service;
 
+import com.photoloader.exception.NotFoundException;
 import com.photoloader.service.bean.ImageResolution;
 import com.photoloader.service.helper.ImageResizer;
 import java.time.LocalDateTime;
@@ -71,8 +72,8 @@ public class ImageProcessorService {
       counter++;
     }
     if (counter == 10000) {
-      throw new RuntimeException("no further images available for a given search criteria:"
-          + " year =" + year);
+      throw new NotFoundException("no further images available for a given search criteria:"
+          + " year=" + year);
     }
     return index;
   }
