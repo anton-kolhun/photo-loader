@@ -27,7 +27,7 @@ public class ImageProcessorService {
 
   private Map<String, UsedIndexInfo> sessionToUsedIndexes;
 
-  public static final Integer DEFAULT_HEIGHT = 1400;
+  public static final Integer DEFAULT_HEIGHT = 1500;
 
   public static final Integer DEFAULT_WIDTH = 900;
 
