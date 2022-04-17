@@ -95,7 +95,8 @@ public class ImageProcessorService {
 
   }
 
-//  public byte[] fetchRandomImage(String sessionId, String year) {
+  //for local testing
+//  public byte[] fetchRandomImage(String sessionId, String year,  ImageResolution resolution) {
 //    ClassPathResource classPathResource = new ClassPathResource("static/login_image.jpg");
 //    try (InputStream is = classPathResource.getInputStream()) {
 //      byte[] bytes = IOUtils.toByteArray(is);
