@@ -2,7 +2,7 @@
 Web application that randomly loads photos from a configured aws s3 bucket.
 
 ## Required Prerequisites
-* JDK 11
+* JDK 11+
 * Maven
 
 ## Building 
