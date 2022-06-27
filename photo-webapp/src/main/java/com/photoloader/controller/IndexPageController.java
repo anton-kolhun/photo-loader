@@ -28,4 +28,9 @@ public class IndexPageController {
   public String policy() {
     return "policy";
   }
+
+  @GetMapping("body.html")
+  public String body() {
+    return "body";
+  }
 }
