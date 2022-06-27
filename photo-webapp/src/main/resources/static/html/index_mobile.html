@@ -27,10 +27,14 @@
       if (file) {
         /* Make an HTTP request using the attribute value as the file name: */
         xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
+        xhttp.onreadystatechange = function () {
           if (this.readyState == 4) {
-            if (this.status == 200) {elmnt.innerHTML = this.responseText;}
-            if (this.status == 404) {elmnt.innerHTML = "Page not found.";}
+            if (this.status == 200) {
+              elmnt.innerHTML = this.responseText;
+            }
+            if (this.status == 404) {
+              elmnt.innerHTML = "Page not found.";
+            }
             /* Remove the attribute, and call this function once more: */
             elmnt.removeAttribute("w3-include-html");
             includeHTML();
@@ -51,23 +55,24 @@
     var url = 'image';
     url = url + '?height=' + window.screen.height;
     url = url + '&width=' + window.screen.width;
-    if (year != 'all') {
+    if (year !== undefined && year !== 'all') {
       url = url + '&year=' + year;
     }
-    $.get(url, function(data, status){
+    $.get(url, function (data, status) {
       if (data.includes('login')) {
-        location.href='login'
+        location.href = 'login'
       }
       $('#img').attr("src", 'data:image/png;base64, ' + data);
       $('#loader').prop('disabled', false);
       $('#spinner').hide();
     })
-            .fail(function() {
+            .fail(function () {
               $('#loader').prop('disabled', false);
               $('#spinner').hide();
             })
   }
-  $( document ).ready(function() {
+
+  $(document).ready(function () {
     includeHTML();
     loadImage();
   });
