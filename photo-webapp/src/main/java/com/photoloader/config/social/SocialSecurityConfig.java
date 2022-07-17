@@ -32,7 +32,7 @@ public class SocialSecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf().disable()
                 .authorizeRequests()
                 .antMatchers("/login*", "/signin/**", "/signup/**", "/policy",
-                        "/js/*", "/css/*", "/img/*").permitAll()
+                        "/js/*", "/css/*", "/img/*", "/actuator/health").permitAll()
                 .anyRequest().hasRole("ADMIN")
                 //.anyRequest().authenticated()
                 .and()
