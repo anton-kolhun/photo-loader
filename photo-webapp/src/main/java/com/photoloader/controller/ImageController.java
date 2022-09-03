@@ -34,6 +34,10 @@ public class ImageController {
                 .width(width)
                 .quality(quality)
                 .build();
+    } else {
+        imageMetaData = ImageCharacteristics.builder()
+              .quality(quality)
+              .build();
     }
     byte[] image = imageProcessorService.fetchRandomImage(httpSession.getId(), year, imageMetaData);
     return Base64.getEncoder().encodeToString(image);
