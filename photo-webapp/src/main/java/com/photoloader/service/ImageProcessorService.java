@@ -15,11 +15,13 @@ import java.util.function.Predicate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class ImageProcessorService {
 
   private final S3Manager s3Manager;
@@ -38,7 +40,10 @@ public class ImageProcessorService {
     int index = calculateAvailableIndex(sessionId, year, allFiles);
     String fileName;
     fileName = allFiles.get(index);
+    long start = System.currentTimeMillis();
     byte[] downloadedFile = s3Manager.downloadFile(fileName);
+    long end = System.currentTimeMillis();
+    log.debug("image downloading time = " +  (end - start) + " ms");
     ImageCharacteristics adjustedMetaData = ImageCharacteristics.builder()
             .height(metaData.getHeight().map(val -> (int) (val * 0.75)).orElse(DEFAULT_HEIGHT))
             .width(metaData.getWidth().map(val -> (int) (val * 0.75)).orElse(DEFAULT_WIDTH))
