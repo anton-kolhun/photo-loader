@@ -27,7 +27,7 @@ public class ImageController {
       @RequestParam(value = "width", required = false) Integer width,
       @RequestParam(value = "quality", required = false) Quality quality,
       HttpSession httpSession, @RequestHeader Map<String, String> headers) {
-    ImageCharacteristics imageMetaData = new ImageCharacteristics();
+    ImageCharacteristics imageMetaData;
     if (!headers.get("user-agent").toLowerCase().contains("mobile")) {
         imageMetaData = ImageCharacteristics.builder()
                 .height(height)

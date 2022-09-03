@@ -1,7 +1,6 @@
 package com.photoloader.service;
 
 import com.amazonaws.AmazonClientException;
-import com.amazonaws.event.ProgressListener;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.Download;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class S3Manager {
 
+    public static final String CACHE_FOLDER_NAME = "cache";
     private final AmazonS3 awsS3Client;
 
     public final TransferManager transferManager;
@@ -61,16 +62,25 @@ public class S3Manager {
     }
 
     public byte[] downloadFile(String fileName) {
-        File file = new File(String.valueOf(System.currentTimeMillis()));
+        String localFilePath = CACHE_FOLDER_NAME + "/" + fileName;
+        Path pathToFIle = Path.of(localFilePath);
+        if (Files.exists(pathToFIle)) {
+            try {
+                return Files.readAllBytes(pathToFIle);
+            } catch (IOException e) {
+                throw new RuntimeException("Error occurred while reading file: " + localFilePath, e);
+            }
+        }
+        File file = new File(localFilePath);
         Download download = transferManager.download(bucket, fileName, file);
-        download.addProgressListener(
-                (ProgressListener) progressEvent -> {
-                     log.debug("Downloaded bytes: " + progressEvent.getBytesTransferred());
-                });
+//        download.addProgressListener(
+//                (ProgressListener) progressEvent -> {
+//                     log.debug("Downloaded bytes: " + progressEvent.getBytesTransferred());
+//                });
         try {
             download.waitForCompletion();
             byte[] res = Files.readAllBytes(Paths.get(file.getPath()));
-            file.delete();
+            //file.delete();
             return res;
         } catch (AmazonClientException | InterruptedException | IOException e) {
             throw new RuntimeException("Failed to fetch data from S3: " + fileName, e);
