@@ -2,9 +2,9 @@
     <img id="img" alt="">
 </div>
 <div class="form-group flex flex-row">
-    <button id="loader" style="height:90px;width:400px;font-size:35px;margin-right:10px;"
+    <button id="loader" style="height:90px;width:200px;font-size:35px;margin-right:10px;"
             class="btn btn-primary btn-lg btn-block"
-            onclick="loadImage()">Хочу наступне фото!
+            onclick="loadImage()">Наступне!
     </button>
     <select name="year" id="year" style="height:70px;width:180px;font-size:30px;">
         <option value="all">Всі фото</option>
@@ -17,6 +17,11 @@
         <option value="2016">2016</option>
         <option value="2015">2015</option>
         <option value="2014">2014</option>
+    </select>
+    <select name="quality" id="quality" style="height:70px;width:225px;font-size:30px;">
+        <option value="HIGH">Висока якість</option>
+        <option selected value="MEDIUM">Середня якість</option>
+        <option value="LOW">Низька якість</option>
     </select>
     <div id="spinner" style="width: 3rem; height: 3rem;" class="spinner-border text-primary" role="status">
     </div>

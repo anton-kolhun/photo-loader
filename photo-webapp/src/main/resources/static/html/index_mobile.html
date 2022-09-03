@@ -58,6 +58,10 @@
     if (year !== undefined && year !== 'all') {
       url = url + '&year=' + year;
     }
+    let quality = $('#quality').val();
+    if (quality !== undefined) {
+      url = url + '&quality=' + quality;
+    }
     $.get(url, function (data, status) {
       if (data.includes('login')) {
         location.href = 'login'

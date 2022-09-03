@@ -1,7 +1,8 @@
 package com.photoloader.service;
 
 import com.photoloader.exception.NotFoundException;
-import com.photoloader.service.bean.ImageResolution;
+import com.photoloader.service.bean.ImageCharacteristics;
+import com.photoloader.service.bean.Quality;
 import com.photoloader.service.helper.ImageResizer;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -32,17 +33,18 @@ public class ImageProcessorService {
   public static final Integer DEFAULT_WIDTH = 900;
 
 
-  public byte[] fetchRandomImage(String sessionId, String year, ImageResolution imageResolution) {
+  public byte[] fetchRandomImage(String sessionId, String year, ImageCharacteristics metaData) {
     List<String> allFiles = s3Manager.getAllFilesInBucket();
     int index = calculateAvailableIndex(sessionId, year, allFiles);
     String fileName;
     fileName = allFiles.get(index);
     byte[] downloadedFile = s3Manager.downloadFile(fileName);
-    ImageResolution adjustedResolution = ImageResolution.builder()
-        .height(imageResolution.getHeight().map(val -> (int) (val * 0.75)).orElse(DEFAULT_HEIGHT))
-        .width(imageResolution.getWidth().map(val -> (int) (val * 0.75)).orElse(DEFAULT_WIDTH))
-        .build();
-    byte[] resized = imageResizer.resizeImage(downloadedFile, adjustedResolution);
+    ImageCharacteristics adjustedMetaData = ImageCharacteristics.builder()
+            .height(metaData.getHeight().map(val -> (int) (val * 0.75)).orElse(DEFAULT_HEIGHT))
+            .width(metaData.getWidth().map(val -> (int) (val * 0.75)).orElse(DEFAULT_WIDTH))
+            .quality(metaData.getQuality().orElse(Quality.MEDIUM))
+            .build();
+    byte[] resized = imageResizer.resizeImage(downloadedFile, adjustedMetaData);
     Set<Integer> newVal = new HashSet<>(Arrays.asList(index));
     UsedIndexInfo usedIndexInfo = new UsedIndexInfo(newVal, LocalDateTime.now());
     sessionToUsedIndexes.merge(sessionId, usedIndexInfo, (existingInfo, newInfo) -> {
