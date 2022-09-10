@@ -40,7 +40,7 @@ public class ImageProcessorService {
     public byte[] fetchRandomImage(ImageSessionCursor cursor, String year, ImageCharacteristics metaData) {
         List<String> allFiles = s3Manager.getAllFilesInBucket();
         String fileName;
-        if (cursor.getCurrentCursor() >= cursor.getSeenImages().size()) {
+        if (cursor.getCurrentCursor() > cursor.getSeenImages().size()) {
             int index = calculateAvailableIndex(cursor.getSessionId(), year, allFiles);
             Set<Integer> newVal = new HashSet<>(Arrays.asList(index));
             UsedIndexInfo usedIndexInfo = new UsedIndexInfo(newVal, LocalDateTime.now());
