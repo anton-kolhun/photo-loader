@@ -51,11 +51,11 @@ public class ImageProcessorService {
             });
             fileName = allFiles.get(index);
             cursor.getSeenImages().add(fileName);
-        } else if (cursor.getCurrentCursor() < 0) {
-            cursor.setCurrentCursor(0);
+        } else if (cursor.getCurrentCursor() <= 0) {
+            cursor.setCurrentCursor(1);
             throw new NotFoundException("There are no more previous images in the curren session");
         } else {
-            fileName = cursor.getSeenImages().get(cursor.getCurrentCursor());
+            fileName = cursor.getSeenImages().get(cursor.getCurrentCursor() - 1);
         }
         long start = System.currentTimeMillis();
         byte[] downloadedFile = s3Manager.downloadFile(fileName);
