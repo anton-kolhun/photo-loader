@@ -48,8 +48,9 @@
     }
   }
 
-  function loadImage() {
-    $('#loader').prop('disabled', true);
+  function loadImage(direction) {
+    $('#loaderForward').prop('disabled', true);
+    $('#loaderBackward').prop('disabled', true);
     $('#spinner').show();
     var year = $('#year').val();
     var url = 'image';
@@ -62,23 +63,28 @@
     if (quality !== undefined) {
       url = url + '&quality=' + quality;
     }
+    if (direction !== undefined) {
+      url = url + '&direction=' + direction;
+    }
     $.get(url, function (data, status) {
       if (data.includes('login')) {
         location.href = 'login'
       }
       $('#img').attr("src", 'data:image/png;base64, ' + data);
-      $('#loader').prop('disabled', false);
+      $('#loaderForward').prop('disabled', false);
+      $('#loaderBackward').prop('disabled', false);
       $('#spinner').hide();
     })
             .fail(function () {
-              $('#loader').prop('disabled', false);
+              $('#loaderForward').prop('disabled', false);
+              $('#loaderBackward').prop('disabled', false);
               $('#spinner').hide();
             })
   }
 
   $(document).ready(function () {
     includeHTML();
-    loadImage();
+    setTimeout(loadImage, 200);
   });
 </script>
 </html>
