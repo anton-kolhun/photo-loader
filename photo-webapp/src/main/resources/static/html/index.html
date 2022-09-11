@@ -51,7 +51,7 @@
     function loadImage(direction) {
         $('#loaderForward').prop('disabled', true);
         $('#loaderBackward').prop('disabled', true);
-        $('#spinner').show();
+        $('#spinner').css('visibility', 'visible');
         var year = $('#year').val();
         var url = 'image';
         url = url + '?height=' + window.screen.height;
@@ -73,12 +73,12 @@
             $('#img').attr("src", 'data:image/png;base64, ' + data);
             $('#loaderForward').prop('disabled', false);
             $('#loaderBackward').prop('disabled', false);
-            $('#spinner').hide();
+            $('#spinner').css('visibility', 'hidden');
         })
             .fail(function () {
                 $('#loaderForward').prop('disabled', false);
                 $('#loaderBackward').prop('disabled', false);
-                $('#spinner').hide();
+                $('#spinner').css('visibility', 'hidden');
             })
     }
 
