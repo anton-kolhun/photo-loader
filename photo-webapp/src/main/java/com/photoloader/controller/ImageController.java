@@ -46,8 +46,13 @@ public class ImageController {
         }
         ImageSessionCursor cursor = (ImageSessionCursor) httpSession.getAttribute("sessionInfo");
         if (cursor == null) {
-            cursor = new ImageSessionCursor(httpSession.getId(), new ArrayList<>(), 0);
+            cursor = new ImageSessionCursor(httpSession.getId(), new ArrayList<>(), 0, year);
             httpSession.setAttribute("sessionInfo", cursor);
+        }
+        if (cursor.getFilter() != null && !cursor.getFilter().equals(year)) {
+            cursor.setFilter(year);
+            cursor.getSeenImages().clear();
+            cursor.setCurrentCursor(0);
         }
         if (direction == Direction.NEXT) {
             cursor.setCurrentCursor(cursor.getCurrentCursor() + 1);
