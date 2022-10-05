@@ -12,7 +12,7 @@
         <appender-ref ref="STDOUT"/>
     </appender>
 
-    <logger name="com.photoloader" level="DEBUG">
+    <logger name="com.photoloader" level="INFO">
     </logger>
 
     <root level="INFO">
