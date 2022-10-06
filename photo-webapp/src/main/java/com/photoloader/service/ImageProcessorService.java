@@ -41,7 +41,7 @@ public class ImageProcessorService {
         List<String> allFiles = s3Manager.getAllFilesInBucket();
         String fileName;
         if (cursor.getCurrentCursor() > cursor.getSeenImages().size()) {
-            int index = calculateAvailableIndex(cursor.getSessionId(), year, allFiles);
+            int index = calculateAvailableIndex(cursor, year, allFiles);
             Set<Integer> newVal = new HashSet<>(Arrays.asList(index));
             UsedIndexInfo usedIndexInfo = new UsedIndexInfo(newVal, LocalDateTime.now());
             sessionToUsedIndexes.merge(cursor.getSessionId(), usedIndexInfo, (existingInfo, newInfo) -> {
@@ -71,10 +71,10 @@ public class ImageProcessorService {
 
     }
 
-    private int calculateAvailableIndex(String sessionId, String year, List<String> allFiles) {
+    private int calculateAvailableIndex(ImageSessionCursor imageSessionCursor, String year, List<String> allFiles) {
         Random random = new Random();
         int index = random.nextInt(allFiles.size());
-        UsedIndexInfo currentInfo = sessionToUsedIndexes.getOrDefault(sessionId, new UsedIndexInfo());
+        UsedIndexInfo currentInfo = sessionToUsedIndexes.getOrDefault(imageSessionCursor.getSessionId(), new UsedIndexInfo());
         Predicate<String> filePredicate;
         if (year == null) {
             filePredicate = s -> true;
@@ -90,6 +90,7 @@ public class ImageProcessorService {
             counter++;
         }
         if (counter == 10000) {
+            imageSessionCursor.setCurrentCursor(imageSessionCursor.getCurrentCursor() - 1);
             throw new NotFoundException("no further images available for a given search criteria:"
                     + " year=" + year);
         }
