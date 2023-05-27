@@ -10,6 +10,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -72,12 +74,22 @@ public class ImageProcessorService {
     }
 
     private int calculateAvailableIndex(ImageSessionCursor imageSessionCursor, String year, List<String> allFiles) {
+        var roles = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+        boolean isPublic = false;
+        for (GrantedAuthority role : roles) {
+            if (role.getAuthority().contains("ROLE_PUBLIC")) {
+                isPublic = true;
+                break;
+            }
+        }
         Random random = new Random();
         int index = random.nextInt(allFiles.size());
         UsedIndexInfo currentInfo = sessionToUsedIndexes.getOrDefault(imageSessionCursor.getSessionId(), new UsedIndexInfo());
         Predicate<String> filePredicate;
-        if (year == null) {
-            filePredicate = s -> true;
+        if (isPublic) {
+            filePredicate = s -> s.contains("test-user/");
+        } else if (year == null) {
+            filePredicate = s -> !s.contains("test-user/");
         } else {
             filePredicate = s -> s.contains(year + "/");
         }
