@@ -33,7 +33,7 @@ public class SocialSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/login*", "/signin/**", "/signup/**", "/policy",
                         "/js/*", "/css/*", "/img/*", "/actuator/health").permitAll()
-                .anyRequest().hasRole("ADMIN")
+                .anyRequest().hasAnyRole("ADMIN", "PUBLIC")
                 //.anyRequest().authenticated()
                 .and()
                 .formLogin().loginPage("/login").permitAll()

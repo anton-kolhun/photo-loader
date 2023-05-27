@@ -1,13 +1,6 @@
 package com.photoloader.config.social;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.beans.ConstructorProperties;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +12,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.web.SignInAdapter;
 import org.springframework.web.context.request.NativeWebRequest;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 @Slf4j
 public class FacebookSignInAdapter implements SignInAdapter {
@@ -37,7 +37,7 @@ public class FacebookSignInAdapter implements SignInAdapter {
     if (!authorizedUsers.contains(new UserData(connection.getKey().getProviderUserId()))) {
       SecurityContextHolder.getContext()
           .setAuthentication(new UsernamePasswordAuthenticationToken(connection, null,
-              Arrays.asList(new SimpleGrantedAuthority("ROLE_REGULAR"))));
+              Arrays.asList(new SimpleGrantedAuthority("ROLE_PUBLIC"))));
     } else {
       SecurityContextHolder.getContext()
           .setAuthentication(new UsernamePasswordAuthenticationToken(connection, null,
