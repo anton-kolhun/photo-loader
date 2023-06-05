@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -88,7 +89,7 @@ public class ImageProcessorService {
         Predicate<String> filePredicate;
         if (isPublic) {
             filePredicate = s -> s.contains("test-user/");
-        } else if (year == null) {
+        } else if (StringUtils.isEmpty(year)) {
             filePredicate = s -> !s.contains("test-user/");
         } else {
             filePredicate = s -> s.contains(year + "/");
