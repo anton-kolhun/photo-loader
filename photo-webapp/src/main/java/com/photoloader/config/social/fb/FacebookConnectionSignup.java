@@ -1,4 +1,4 @@
-package com.photoloader.config.social;
+package com.photoloader.config.social.fb;
 
 import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.ConnectionSignUp;
