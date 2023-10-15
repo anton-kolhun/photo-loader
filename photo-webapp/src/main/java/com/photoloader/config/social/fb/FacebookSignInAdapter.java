@@ -1,4 +1,4 @@
-package com.photoloader.config.social;
+package com.photoloader.config.social.fb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.EqualsAndHashCode;
@@ -32,7 +32,7 @@ public class FacebookSignInAdapter implements SignInAdapter {
 
   @Override
   public String signIn(String localUserId, Connection<?> connection, NativeWebRequest request) {
-    log.info("signed in as name = {}, id= {} ", connection.getDisplayName(),
+    log.info("signed in via fb as name = {}, id= {} ", connection.getDisplayName(),
         connection.getKey().getProviderUserId());
     if (!authorizedUsers.contains(new UserData(connection.getKey().getProviderUserId()))) {
       SecurityContextHolder.getContext()
