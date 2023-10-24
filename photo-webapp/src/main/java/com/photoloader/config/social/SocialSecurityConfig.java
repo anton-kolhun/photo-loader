@@ -14,6 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.http.HttpEntity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -29,6 +30,7 @@ import org.springframework.social.connect.mem.InMemoryUsersConnectionRepository;
 import org.springframework.social.connect.support.ConnectionFactoryRegistry;
 import org.springframework.social.connect.web.ProviderSignInController;
 import org.springframework.social.facebook.connect.FacebookConnectionFactory;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,6 +49,7 @@ public class SocialSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private FacebookConnectionSignup facebookConnectionSignup;
+
 
 //    @Override
 //    protected void configure(final HttpSecurity http) throws Exception {
@@ -88,12 +91,14 @@ public class SocialSecurityConfig extends WebSecurityConfigurerAdapter {
                                                              @Value("${spring.social.facebook.appSecret}") String appSecret,
                                                              @Value("${spring.social.facebook.appId}") String appId,
                                                              @Value("${authorizedUsers.path}") String authorizedUsersPath,
-                                                             ObjectMapper objectMapper) {
+                                                             ObjectMapper objectMapper, RestTemplate restTemplate,
+                                                             @Value("${ntfy.url}") String ntfyUrl) {
         ConnectionFactoryLocator connectionFactoryLocator = connectionFactoryLocator(appSecret, appId);
         UsersConnectionRepository usersConnectionRepository = getUsersConnectionRepository(connectionFactoryLocator);
         ((InMemoryUsersConnectionRepository) usersConnectionRepository).setConnectionSignUp(facebookConnectionSignup);
         ProviderSignInController controller = new ProviderSignInController(connectionFactoryLocator,
-                usersConnectionRepository, new FacebookSignInAdapter(objectMapper, authorizedUsersPath));
+                usersConnectionRepository, new FacebookSignInAdapter(objectMapper, authorizedUsersPath,
+                restTemplate, ntfyUrl));
         controller.setApplicationUrl(appUrl);
         return controller;
     }
@@ -121,8 +126,9 @@ public class SocialSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
     public OidcUserService customService(ObjectMapper objectMapper,
-                                         @Value("${authorizedUsers.google.path}") String authorizedUsersPath) {
-        return new CustomOidcUserService(loadAuthorizedUsers(objectMapper, authorizedUsersPath));
+                                         @Value("${authorizedUsers.google.path}") String authorizedUsersPath,
+                                         RestTemplate restTemplate, @Value("${ntfy.url}") String ntfyUrl) {
+        return new CustomOidcUserService(loadAuthorizedUsers(objectMapper, authorizedUsersPath), restTemplate, ntfyUrl);
     }
 
     @Slf4j
@@ -130,14 +136,20 @@ public class SocialSecurityConfig extends WebSecurityConfigurerAdapter {
 
         private final Set<UserData> authorizedUsers;
 
-        public CustomOidcUserService(Set<UserData> authorizedUsers) {
+        private final RestTemplate restTemplate;
+
+        private final String ntfyUrl;
+
+        public CustomOidcUserService(Set<UserData> authorizedUsers, RestTemplate restTemplate, String ntfyUrl) {
             this.authorizedUsers = authorizedUsers;
+            this.restTemplate = restTemplate;
+            this.ntfyUrl = ntfyUrl;
         }
 
         @Override
         public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
             OidcUser user = super.loadUser(userRequest);
-            log.info("signed in via google as email = {}", user.getEmail());
+            logSignIn(user);
             List extendedAuth = new ArrayList<>(user.getAuthorities());
             if (authorizedUsers.contains(new UserData(user.getEmail()))) {
                 extendedAuth.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
@@ -146,6 +158,18 @@ public class SocialSecurityConfig extends WebSecurityConfigurerAdapter {
             }
             OidcUser updated = new DefaultOidcUser(extendedAuth, user.getIdToken());
             return updated;
+        }
+
+        private void logSignIn(OidcUser user) {
+            String msg = String.format("signed in via google as email = %s", user.getEmail());
+            log.info(msg);
+            try {
+                HttpEntity<String> requestEntity = new HttpEntity<>(msg);
+                String response = restTemplate.postForObject(ntfyUrl, requestEntity, String.class);
+                log.info("ntfy response: {}", response);
+            } catch (Exception e) {
+                log.warn("Could not send msg to ntfy.sh", e);
+            }
         }
     }
 
