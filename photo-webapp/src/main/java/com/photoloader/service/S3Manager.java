@@ -2,6 +2,8 @@ package com.photoloader.service;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.Download;
 import com.amazonaws.services.s3.transfer.TransferManager;
@@ -50,8 +52,19 @@ public class S3Manager {
         try {
             allFilesLock.lock();
             if (allFilesCache.isEmpty()) {
-                List<S3ObjectSummary> files = awsS3Client.listObjects(bucket).getObjectSummaries();
-                allFilesCache.addAll(files);
+                boolean shouldContinue = true;
+                ListObjectsRequest request = new ListObjectsRequest();
+                request.setBucketName(bucket);
+                while (shouldContinue) {
+                    ObjectListing listing = awsS3Client.listObjects(request);
+                    List<S3ObjectSummary> files = listing.getObjectSummaries();
+                    allFilesCache.addAll(files);
+                    if (listing.isTruncated()) {
+                        request.setMarker(listing.getNextMarker());
+                    } else {
+                        shouldContinue = false;
+                    }
+                }
             }
             return allFilesCache.stream()
                     .map(S3ObjectSummary::getKey)
