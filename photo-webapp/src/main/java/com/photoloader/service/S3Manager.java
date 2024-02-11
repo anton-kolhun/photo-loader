@@ -52,19 +52,8 @@ public class S3Manager {
         try {
             allFilesLock.lock();
             if (allFilesCache.isEmpty()) {
-                boolean shouldContinue = true;
-                ListObjectsRequest request = new ListObjectsRequest();
-                request.setBucketName(bucket);
-                while (shouldContinue) {
-                    ObjectListing listing = awsS3Client.listObjects(request);
-                    List<S3ObjectSummary> files = listing.getObjectSummaries();
-                    allFilesCache.addAll(files);
-                    if (listing.isTruncated()) {
-                        request.setMarker(listing.getNextMarker());
-                    } else {
-                        shouldContinue = false;
-                    }
-                }
+                List<S3ObjectSummary> files = listAllFiles();
+                allFilesCache.addAll(files);
             }
             return allFilesCache.stream()
                     .map(S3ObjectSummary::getKey)
@@ -72,6 +61,24 @@ public class S3Manager {
         } finally {
             allFilesLock.unlock();
         }
+    }
+
+    private List<S3ObjectSummary> listAllFiles() {
+        boolean shouldContinue = true;
+        ListObjectsRequest request = new ListObjectsRequest();
+        request.setBucketName(bucket);
+        List<S3ObjectSummary> allFiles = new ArrayList<>();
+        while (shouldContinue) {
+            ObjectListing listing = awsS3Client.listObjects(request);
+            List<S3ObjectSummary> files = listing.getObjectSummaries();
+            allFiles.addAll(files);
+            if (listing.isTruncated()) {
+                request.setMarker(listing.getNextMarker());
+            } else {
+                shouldContinue = false;
+            }
+        }
+        return allFiles;
     }
 
     public byte[] downloadFile(String fileName) {
@@ -102,7 +109,8 @@ public class S3Manager {
 
     @Scheduled(cron = "0 0 0/1 * * *")
     public void updateAllFilesCache() {
-        List<S3ObjectSummary> files = awsS3Client.listObjects(bucket).getObjectSummaries();
+
+        List<S3ObjectSummary> files = listAllFiles();
         try {
             allFilesLock.lock();
             allFilesCache.clear();
