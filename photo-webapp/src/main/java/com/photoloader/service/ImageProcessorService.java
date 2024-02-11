@@ -69,7 +69,7 @@ public class ImageProcessorService {
                 .width(metaData.getWidth().map(val -> (int) (val * 0.75)).orElse(DEFAULT_WIDTH))
                 .quality(metaData.getQuality().orElse(Quality.MEDIUM))
                 .build();
-        byte[] resized = imageResizer.resizeImage(downloadedFile, adjustedMetaData);
+        byte[] resized = imageResizer.resizeImage(downloadedFile, adjustedMetaData, fileName);
         return resized;
 
     }

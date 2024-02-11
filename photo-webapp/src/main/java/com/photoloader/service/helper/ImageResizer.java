@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 public class ImageResizer {
 
 
-  public byte[] resizeImage(byte[] originalImage, ImageCharacteristics metaData) {
+  public byte[] resizeImage(byte[] originalImage, ImageCharacteristics metaData, String fileName) {
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         InputStream is = new ByteArrayInputStream(originalImage)) {
       long start = System.currentTimeMillis();
@@ -35,8 +35,8 @@ public class ImageResizer {
       long end = System.currentTimeMillis();
       log.debug("image resizing time = " +  (end - start) + " ms");
       return data;
-    } catch (IOException e) {
-      throw new RuntimeException("error occurred while resizing the image", e);
+    } catch (Exception e) {
+      throw new RuntimeException("Error occurred while resizing the image " + fileName, e);
     }
   }
 }
