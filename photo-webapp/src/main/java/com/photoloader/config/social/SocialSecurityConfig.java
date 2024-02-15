@@ -153,8 +153,6 @@ public class SocialSecurityConfig extends WebSecurityConfigurerAdapter {
             List extendedAuth = new ArrayList<>(user.getAuthorities());
             if (authorizedUsers.contains(new UserData(user.getEmail()))) {
                 extendedAuth.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-            } else {
-                extendedAuth.add(new SimpleGrantedAuthority("ROLE_PUBLIC"));
             }
             OidcUser updated = new DefaultOidcUser(extendedAuth, user.getIdToken());
             return updated;
