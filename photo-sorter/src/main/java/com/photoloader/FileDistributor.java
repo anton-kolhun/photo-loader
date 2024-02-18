@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
+
+import com.photoloader.service.helper.ImageResizer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -23,7 +25,8 @@ public class FileDistributor {
         .withCredentials(new DefaultAWSCredentialsProviderChain())
         .withRegion(awsRegion)
         .build();
-    S3Manager s3Manager = new S3Manager(amazonS3, bucketName);
+    ImageResizer imageResizer = new ImageResizer();
+    S3Manager s3Manager = new S3Manager(amazonS3, bucketName, imageResizer);
     List<S3ObjectSummary> files = amazonS3.listObjects(bucketName).getObjectSummaries();
     //TODO: initialize thread pool to process batch in parallel;
     for (S3ObjectSummary s3ObjectSummary : files) {

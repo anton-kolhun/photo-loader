@@ -8,6 +8,9 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.Download;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.photoloader.service.bean.ImageCharacteristics;
+import com.photoloader.service.bean.Quality;
+import com.photoloader.service.helper.ImageResizer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -39,12 +42,15 @@ public class S3Manager {
 
     private final Lock allFilesLock = new ReentrantLock();
 
-    public S3Manager(AmazonS3 awsS3Client, @Value("${s3.bucketName}") String bucketName) {
+    private final ImageResizer imageResizer;
+
+    public S3Manager(AmazonS3 awsS3Client, @Value("${s3.bucketName}") String bucketName, ImageResizer imageResizer) {
         this.awsS3Client = awsS3Client;
         this.transferManager = TransferManagerBuilder.standard()
                 .withS3Client(awsS3Client)
                 .build();
         this.bucket = bucketName;
+        this.imageResizer = imageResizer;
     }
 
 
@@ -99,9 +105,14 @@ public class S3Manager {
 //                });
         try {
             download.waitForCompletion();
-            byte[] res = Files.readAllBytes(Paths.get(file.getPath()));
+            ImageCharacteristics adjustedMetaData = ImageCharacteristics.builder()
+                    .quality(Quality.HIGH)
+                    .build();
+            byte[] downloadedFile = Files.readAllBytes(Paths.get(file.getPath()));
+            byte[] resized = imageResizer.resizeImage(downloadedFile, adjustedMetaData, fileName);
+            Files.write(Paths.get(file.getPath()), resized);
             //file.delete();
-            return res;
+            return resized;
         } catch (AmazonClientException | InterruptedException | IOException e) {
             throw new RuntimeException("Failed to fetch data from S3: " + fileName, e);
         }
