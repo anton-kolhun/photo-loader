@@ -61,7 +61,7 @@ public class ImageProcessorService {
         long start = System.currentTimeMillis();
         byte[] downloadedFile = s3Manager.downloadFile(fileName);
         long end = System.currentTimeMillis();
-        log.debug("image downloading time = " + (end - start) + " ms");
+        log.debug("image {} downloading time =  {}ms", fileName, end - start);
         ImageCharacteristics adjustedMetaData = ImageCharacteristics.builder()
                 .height(metaData.getHeight().map(val -> (int) (val * 0.75)).orElse(DEFAULT_HEIGHT))
                 .width(metaData.getWidth().map(val -> (int) (val * 0.75)).orElse(DEFAULT_WIDTH))
