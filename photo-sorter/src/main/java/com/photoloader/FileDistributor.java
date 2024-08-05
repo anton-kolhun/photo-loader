@@ -3,6 +3,8 @@ package com.photoloader;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Metadata;
@@ -11,6 +13,7 @@ import com.photoloader.service.S3Manager;
 import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -27,7 +30,20 @@ public class FileDistributor {
         .build();
     ImageResizer imageResizer = new ImageResizer();
     S3Manager s3Manager = new S3Manager(amazonS3, bucketName, imageResizer);
-    List<S3ObjectSummary> files = amazonS3.listObjects(bucketName).getObjectSummaries();
+    List<S3ObjectSummary> files = new ArrayList<>();
+    boolean shouldContinue = true;
+    ListObjectsRequest request = new ListObjectsRequest();
+    request.setBucketName(bucketName);
+    while (shouldContinue) {
+      ObjectListing listing = amazonS3.listObjects(request);
+      List<S3ObjectSummary> filesOnPage = listing.getObjectSummaries();
+      files.addAll(filesOnPage);
+      if (listing.isTruncated()) {
+          request.setMarker(listing.getNextMarker());
+      } else {
+          shouldContinue = false;
+      }
+    }
     //TODO: initialize thread pool to process batch in parallel;
     for (S3ObjectSummary s3ObjectSummary : files) {
       try {
