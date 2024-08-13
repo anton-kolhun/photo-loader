@@ -87,7 +87,7 @@ public class S3Manager {
         return allFiles;
     }
 
-    public byte[] downloadFile(String fileName) {
+    public byte[] downloadFile(String fileName, boolean resize) {
         String localFilePath = CACHE_FOLDER_NAME + "/" + fileName;
         Path pathToFIle = Path.of(localFilePath);
         if (Files.exists(pathToFIle)) {
@@ -109,13 +109,19 @@ public class S3Manager {
                     .quality(Quality.HIGH)
                     .build();
             byte[] downloadedFile = Files.readAllBytes(Paths.get(file.getPath()));
-            byte[] resized = imageResizer.resizeImage(downloadedFile, adjustedMetaData, fileName);
-            Files.write(Paths.get(file.getPath()), resized);
+            if (resize) {
+                downloadedFile = imageResizer.resizeImage(downloadedFile, adjustedMetaData, fileName);
+            }
+            Files.write(Paths.get(file.getPath()), downloadedFile);
             //file.delete();
-            return resized;
+            return downloadedFile;
         } catch (AmazonClientException | InterruptedException | IOException e) {
             throw new RuntimeException("Failed to fetch data from S3: " + fileName, e);
         }
+    }
+
+    public byte[] downloadFile(String fileName) {
+        return downloadFile(fileName, true);
     }
 
     @Scheduled(cron = "0 0 0/1 * * *")

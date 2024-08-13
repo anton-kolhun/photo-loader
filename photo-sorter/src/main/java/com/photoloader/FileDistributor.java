@@ -51,7 +51,7 @@ public class FileDistributor {
         if (file.contains("/")) {
           continue;
         }
-        byte[] fileBinary = s3Manager.downloadFile(file);
+        byte[] fileBinary = s3Manager.downloadFile(file, false);
         Metadata metadata = ImageMetadataReader.readMetadata(new ByteArrayInputStream(fileBinary));
         ExifSubIFDDirectory directory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
         Date date = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
