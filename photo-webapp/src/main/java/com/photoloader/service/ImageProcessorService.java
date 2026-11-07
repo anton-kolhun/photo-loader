@@ -5,9 +5,10 @@ import com.photoloader.service.bean.ImageCharacteristics;
 import com.photoloader.service.bean.ImageSessionCursor;
 import com.photoloader.service.bean.Quality;
 import com.photoloader.service.helper.ImageResizer;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,10 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public class ImageProcessorService {
 
@@ -31,7 +33,7 @@ public class ImageProcessorService {
 
     private final ImageResizer imageResizer;
 
-    private Map<String, UsedIndexInfo> sessionToUsedIndexes;
+    private final Map<String, UsedIndexInfo> sessionToUsedIndexes = new ConcurrentHashMap<>();
 
     public static final Integer DEFAULT_HEIGHT = 1500;
 

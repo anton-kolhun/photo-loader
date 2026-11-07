@@ -98,6 +98,9 @@ public class S3Manager {
             }
         }
         File file = new File(localFilePath);
+        if (file.getParentFile() != null && !file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
         Download download = transferManager.download(bucket, fileName, file);
 //        download.addProgressListener(
 //                (ProgressListener) progressEvent -> {
