@@ -1,6 +1,7 @@
 package com.photoloader.config.social;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.DispatcherType;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -47,6 +48,7 @@ public class SocialSecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
                         .requestMatchers("/login*", "/signin/**", "/signup/**", "/policy",
                                 "/js/**", "/css/**", "/img/**", "/actuator/health", "/favicon.png", "/login_image.jpg").permitAll()
                         .anyRequest().hasAnyRole("ADMIN", "PUBLIC")
