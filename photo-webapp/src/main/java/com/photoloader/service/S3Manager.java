@@ -1,13 +1,5 @@
 package com.photoloader.service;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.transfer.Download;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.photoloader.service.bean.ImageCharacteristics;
 import com.photoloader.service.bean.Quality;
 import com.photoloader.service.helper.ImageResizer;
@@ -15,6 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,23 +29,18 @@ import java.util.stream.Collectors;
 public class S3Manager {
 
     public static final String CACHE_FOLDER_NAME = "cache";
-    private final AmazonS3 awsS3Client;
-
-    public final TransferManager transferManager;
+    private final S3Client awsS3Client;
 
     private final String bucket;
 
-    private List<S3ObjectSummary> allFilesCache = new ArrayList<>();
+    private List<S3Object> allFilesCache = new ArrayList<>();
 
     private final Lock allFilesLock = new ReentrantLock();
 
     private final ImageResizer imageResizer;
 
-    public S3Manager(AmazonS3 awsS3Client, @Value("${s3.bucketName}") String bucketName, ImageResizer imageResizer) {
+    public S3Manager(S3Client awsS3Client, @Value("${s3.bucketName}") String bucketName, ImageResizer imageResizer) {
         this.awsS3Client = awsS3Client;
-        this.transferManager = TransferManagerBuilder.standard()
-                .withS3Client(awsS3Client)
-                .build();
         this.bucket = bucketName;
         this.imageResizer = imageResizer;
     }
@@ -58,33 +50,26 @@ public class S3Manager {
         try {
             allFilesLock.lock();
             if (allFilesCache.isEmpty()) {
-                List<S3ObjectSummary> files = listAllFiles();
+                List<S3Object> files = listAllFiles();
                 allFilesCache.addAll(files);
             }
             return allFilesCache.stream()
-                    .map(S3ObjectSummary::getKey)
+                    .map(S3Object::key)
                     .collect(Collectors.toList());
         } finally {
             allFilesLock.unlock();
         }
     }
 
-    private List<S3ObjectSummary> listAllFiles() {
-        boolean shouldContinue = true;
-        ListObjectsRequest request = new ListObjectsRequest();
-        request.setBucketName(bucket);
-        List<S3ObjectSummary> allFiles = new ArrayList<>();
-        while (shouldContinue) {
-            ObjectListing listing = awsS3Client.listObjects(request);
-            List<S3ObjectSummary> files = listing.getObjectSummaries();
-            allFiles.addAll(files);
-            if (listing.isTruncated()) {
-                request.setMarker(listing.getNextMarker());
-            } else {
-                shouldContinue = false;
-            }
-        }
-        return allFiles;
+    public List<S3Object> listAllFiles() {
+        ListObjectsV2Request request = ListObjectsV2Request.builder()
+                .bucket(bucket)
+                .build();
+        // the paginator follows continuation tokens until the whole bucket is listed
+        return awsS3Client.listObjectsV2Paginator(request)
+                .contents()
+                .stream()
+                .collect(Collectors.toList());
     }
 
     public byte[] downloadFile(String fileName, boolean resize) {
@@ -101,24 +86,22 @@ public class S3Manager {
         if (file.getParentFile() != null && !file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
         }
-        Download download = transferManager.download(bucket, fileName, file);
-//        download.addProgressListener(
-//                (ProgressListener) progressEvent -> {
-//                     log.debug("Downloaded bytes: " + progressEvent.getBytesTransferred());
-//                });
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(fileName)
+                .build();
         try {
-            download.waitForCompletion();
+            byte[] downloadedFile = awsS3Client.getObjectAsBytes(request).asByteArray();
             ImageCharacteristics adjustedMetaData = ImageCharacteristics.builder()
                     .quality(Quality.HIGH)
                     .build();
-            byte[] downloadedFile = Files.readAllBytes(Paths.get(file.getPath()));
             if (resize) {
                 downloadedFile = imageResizer.resizeImage(downloadedFile, adjustedMetaData, fileName);
             }
             Files.write(Paths.get(file.getPath()), downloadedFile);
             //file.delete();
             return downloadedFile;
-        } catch (AmazonClientException | InterruptedException | IOException e) {
+        } catch (SdkException | IOException e) {
             throw new RuntimeException("Failed to fetch data from S3: " + fileName, e);
         }
     }
@@ -130,7 +113,7 @@ public class S3Manager {
     @Scheduled(cron = "0 0 0/1 * * *")
     public void updateAllFilesCache() {
 
-        List<S3ObjectSummary> files = listAllFiles();
+        List<S3Object> files = listAllFiles();
         try {
             allFilesLock.lock();
             allFilesCache.clear();
