@@ -20,6 +20,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <springboot.version>3.3.5</springboot.version>
     <lombok.version>1.18.36</lombok.version>
+    <awssdk.version>2.29.6</awssdk.version>
   </properties>
 
   <dependencyManagement>
@@ -33,9 +34,11 @@
       </dependency>
 
       <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-s3</artifactId>
-        <version>1.12.172</version>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>${awssdk.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <dependency>

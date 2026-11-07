@@ -1,11 +1,11 @@
 package com.photoloader;
 
-import com.amazonaws.services.s3.AmazonS3;
 import com.photoloader.service.S3Manager;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @SpringBootTest
 @TestPropertySource(properties = {
@@ -16,7 +16,7 @@ import org.springframework.test.context.TestPropertySource;
 class AppRunnerTest {
 
     @MockBean
-    private AmazonS3 amazonS3;
+    private S3Client s3Client;
 
     @MockBean
     private S3Manager s3Manager;
