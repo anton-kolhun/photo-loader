@@ -83,9 +83,18 @@
             })
     }
 
+    // show the search link only when the server has search enabled (clip.search.enabled)
+    function showSearchLinkIfEnabled() {
+        $.ajax({url: 'search', method: 'HEAD'}).done(function () {
+            const show = () => $('#searchLink').length ? $('#searchLink').show() : setTimeout(show, 100);
+            show();
+        });
+    }
+
     $(document).ready(function () {
         includeHTML();
         setTimeout(loadImage, 200);
+        showSearchLinkIfEnabled();
     });
 </script>
 </html>
