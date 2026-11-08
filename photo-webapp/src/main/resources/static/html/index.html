@@ -91,6 +91,37 @@
         });
     }
 
+    // same as clicking the on-photo arrows; ignored while a photo is still loading
+    function navigate(direction) {
+        const arrow = direction === 'NEXT' ? '#loaderForward' : '#loaderBackward';
+        if ($(arrow).length && !$(arrow).prop('disabled')) {
+            loadImage(direction);
+        }
+    }
+
+    // ← / → keys (but not while a dropdown has focus: there the arrows change its value)
+    $(document).on('keydown', function (e) {
+        if ($(e.target).is('select, input, textarea')) return;
+        if (e.key === 'ArrowRight') { e.preventDefault(); navigate('NEXT'); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); navigate('PREVIOUS'); }
+    });
+
+    // swipe left / right on touch screens
+    let touchStartX = null, touchStartY = null;
+    $(document).on('touchstart', '#img_holder', function (e) {
+        touchStartX = e.originalEvent.touches[0].clientX;
+        touchStartY = e.originalEvent.touches[0].clientY;
+    });
+    $(document).on('touchend', '#img_holder', function (e) {
+        if (touchStartX === null) return;
+        const dx = e.originalEvent.changedTouches[0].clientX - touchStartX;
+        const dy = e.originalEvent.changedTouches[0].clientY - touchStartY;
+        touchStartX = null;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) { // mostly horizontal, not a scroll
+            navigate(dx < 0 ? 'NEXT' : 'PREVIOUS');
+        }
+    });
+
     $(document).ready(function () {
         includeHTML();
         setTimeout(loadImage, 200);
