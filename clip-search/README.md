@@ -33,7 +33,7 @@ credentials and caches 360px copies in `.image-cache/`, so re-runs only download
 Ship it to the server (it must **not** go into the photo bucket: the slideshow would show the files):
 
 ```bash
-tar czf clip-index.tgz -C index .
+COPYFILE_DISABLE=1 tar czf clip-index.tgz --no-xattrs -C index .   # no macOS ._ files
 scp -i photo.pem clip-index.tgz ec2-user@<host>:~
 ssh -i photo.pem ec2-user@<host> 'mkdir -p ~/clip-index && tar xzf clip-index.tgz -C ~/clip-index'
 # then restart photo-webapp so it reloads the index
