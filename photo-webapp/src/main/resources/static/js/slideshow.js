@@ -85,20 +85,32 @@ function stopAutoplay() {
 
 /* ---------- full screen ---------- */
 
+// Real full screen where the browser supports it; iPhone Safari only allows it for videos,
+// so there the stage just covers the whole page (Safari's own bars stay visible).
 function toggleFullscreen() {
     const stage = document.getElementById('img_holder');
-    if (document.fullscreenElement) {
-        document.exitFullscreen();
-    } else if (stage && stage.requestFullscreen) {
-        stage.requestFullscreen();
+    if (!stage) return;
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else if (stage.classList.contains('pseudo-fullscreen')) {
+        setPseudoFullscreen(stage, false);
+    } else {
+        const request = stage.requestFullscreen || stage.webkitRequestFullscreen;
+        request ? request.call(stage) : setPseudoFullscreen(stage, true);
     }
+}
+
+function setPseudoFullscreen(stage, on) {
+    stage.classList.toggle('pseudo-fullscreen', on);
+    document.documentElement.classList.toggle('no-scroll', on);
+    fitStage();
 }
 
 /* ---------- fit the photo stage to the window ---------- */
 
 function fitStage() {
     const stage = $('#img_holder');
-    if (!stage.length || document.fullscreenElement) return;
+    if (!stage.length || document.fullscreenElement || stage.hasClass('pseudo-fullscreen')) return;
     const controls = $('.controls').outerHeight(true) || 0;
     const top = stage.offset().top;
     stage.css('height', Math.max(240, window.innerHeight - top - controls) + 'px');
@@ -130,6 +142,7 @@ $(document).on('keydown', function (e) {
     if (e.key === 'ArrowLeft') { e.preventDefault(); navigate('PREVIOUS'); }
     if (e.key === ' ') { e.preventDefault(); toggleAutoplay(); }
     if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); }
+    if (e.key === 'Escape' && $('#img_holder').hasClass('pseudo-fullscreen')) { toggleFullscreen(); }
 });
 
 let touchStartX = null, touchStartY = null;
@@ -148,7 +161,7 @@ $(document).on('touchend', '#img_holder', function (e) {
 });
 
 $(window).on('resize', fitStage);
-$(document).on('fullscreenchange', fitStage);
+$(document).on('fullscreenchange webkitfullscreenchange', fitStage);
 
 function startSlideshow() {
     whenBodyReady(function () {
