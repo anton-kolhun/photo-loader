@@ -55,6 +55,11 @@ public class SearchService {
         return index.search(embedding.vector(), Math.min(Math.max(limit, 1), MAX_RESULTS), keyFilter(year));
     }
 
+    public List<EmbeddingIndex.Hit> similar(String key, String year, int limit) {
+        requireSearchable(key);
+        return index.similar(key, Math.min(Math.max(limit, 1), MAX_RESULTS), keyFilter(year));
+    }
+
     public void warmup() {
         textEmbeddingClient.warmup();
     }

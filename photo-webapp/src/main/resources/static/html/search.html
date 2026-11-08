@@ -26,6 +26,8 @@
         #viewer .close-btn { position: absolute; top: 8px; right: 16px; font-size: 36px; color: #fff;
             background: none; border: 0; }
         #viewer .caption { position: absolute; bottom: 12px; color: #ddd; font-size: 14px; }
+        #viewer .similar-btn { position: absolute; top: 12px; left: 16px; font-size: 18px; }
+        #status img { height: 64px; border-radius: 4px; margin-right: 10px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -49,6 +51,7 @@
 
 <div id="viewer">
     <button class="close-btn" title="Закрити">&times;</button>
+    <button class="btn btn-light similar-btn" id="viewerSimilar" title="Знайти схожі фото">Схожі</button>
     <button class="nav-btn" id="prev" style="left:8px" title="Попереднє">&#10094;</button>
     <img id="viewerImg" alt="">
     <button class="nav-btn" id="next" style="right:8px" title="Наступне">&#10095;</button>
@@ -59,6 +62,7 @@
     let hits = [];
     let current = -1;
     let lastWarmup = 0;
+    let similarTo = null; // key of the photo whose look-alikes are shown, or null for a text search
 
     // A cold Lambda needs a second or two to load CLIP; start that while the user is still typing.
     function warmup() {
@@ -71,18 +75,45 @@
     function search() {
         const q = $('#query').val().trim();
         if (!q) return;
+        similarTo = null;
         const year = $('#year').val();
         history.replaceState(null, '', '?q=' + encodeURIComponent(q) + (year ? '&year=' + year : ''));
         $('#status').text('Шукаю…');
+        showResults($.getJSON('search/api', {q: q, year: year || undefined, limit: 60}));
+    }
+
+    // "find similar photos": uses the photo's own embedding, so it is instant and needs no text
+    function findSimilar(key) {
+        similarTo = key;
+        closeViewer();
+        $('#query').val('');
+        const year = $('#year').val();
+        history.replaceState(null, '', '?similar=' + encodeURIComponent(key) + (year ? '&year=' + year : ''));
+        $('#status').empty()
+            .append($('<img>').attr('src', 'search/thumbnail?key=' + encodeURIComponent(key)).attr('alt', key))
+            .append(document.createTextNode('Схожі фото'));
+        showResults($.getJSON('search/similar', {key: key, year: year || undefined, limit: 60}), true);
+        window.scrollTo(0, 0);
+    }
+
+    function rerun() {
+        similarTo ? findSimilar(similarTo) : search();
+    }
+
+    function showResults(request, keepStatus) {
         $('#results').empty();
-        $.getJSON('search/api', {q: q, year: year || undefined, limit: 60})
+        request
             .done(function (data, status, xhr) {
                 if (typeof data === 'string' || (xhr.responseText || '').includes('<html')) {
                     location.href = 'login';  // session expired: the login page came back instead of JSON
                     return;
                 }
                 hits = data;
-                $('#status').text(hits.length ? '' : 'Нічого не знайдено');
+                if (!hits.length) {
+                    $('#status').text('Нічого не знайдено');
+                } else if (!keepStatus) {
+                    $('#status').text('');
+                }
                 hits.forEach(function (hit, i) {
                     const fig = $('<figure>').attr('title', hit.key).on('click', () => openViewer(i));
                     $('<img loading="lazy">').attr('alt', hit.key)
@@ -113,9 +144,10 @@
     $(function () {
         $('#query').on('focus input', warmup);
         $('#searchForm').on('submit', function (e) { e.preventDefault(); search(); });
-        $('#year').on('change', search);
+        $('#year').on('change', rerun);
         $('#prev').on('click', e => { e.stopPropagation(); openViewer(current - 1); });
         $('#next').on('click', e => { e.stopPropagation(); openViewer(current + 1); });
+        $('#viewerSimilar').on('click', e => { e.stopPropagation(); findSimilar(hits[current].key); });
         $('#viewer').on('click', e => { if (e.target.id !== 'viewerImg') closeViewer(); });
         $(document).on('keydown', function (e) {
             if (current < 0) return;
@@ -123,11 +155,30 @@
             if (e.key === 'ArrowLeft') openViewer(current - 1);
             if (e.key === 'ArrowRight') openViewer(current + 1);
         });
-        // restore a search from the URL (shareable / survives reload)
+
+        // swipe left / right in the viewer on touch screens
+        let touchStartX = null, touchStartY = null;
+        $('#viewer').on('touchstart', function (e) {
+            touchStartX = e.originalEvent.touches[0].clientX;
+            touchStartY = e.originalEvent.touches[0].clientY;
+        }).on('touchend', function (e) {
+            if (touchStartX === null || current < 0) return;
+            const dx = e.originalEvent.changedTouches[0].clientX - touchStartX;
+            const dy = e.originalEvent.changedTouches[0].clientY - touchStartY;
+            touchStartX = null;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) { // mostly horizontal, not a scroll
+                e.preventDefault(); // don't let the tap that ends a swipe close the viewer
+                openViewer(current + (dx < 0 ? 1 : -1));
+            }
+        });
+
+        // restore a search from the URL (shareable / survives reload; the slideshow links to ?similar=)
         const params = new URLSearchParams(location.search);
-        if (params.get('q')) {
+        $('#year').val(params.get('year') || '');
+        if (params.get('similar')) {
+            findSimilar(params.get('similar'));
+        } else if (params.get('q')) {
             $('#query').val(params.get('q'));
-            $('#year').val(params.get('year') || '');
             search();
         }
     });

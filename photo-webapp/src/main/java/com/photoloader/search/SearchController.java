@@ -38,6 +38,14 @@ public class SearchController {
         return searchService.search(query, year, limit);
     }
 
+    @GetMapping("search/similar")
+    @ResponseBody
+    public List<EmbeddingIndex.Hit> similar(@RequestParam("key") String key,
+                                            @RequestParam(value = "year", required = false) String year,
+                                            @RequestParam(value = "limit", defaultValue = "30") int limit) {
+        return searchService.similar(key, year, limit);
+    }
+
     /** Called when the search box gets focus, so a cold Lambda loads its model while the user types. */
     @GetMapping("search/warmup")
     public ResponseEntity<Void> warmup() {

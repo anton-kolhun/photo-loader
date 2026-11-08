@@ -39,6 +39,18 @@ class EmbeddingIndexTest {
     }
 
     @Test
+    void similarUsesThePhotosOwnEmbeddingAndExcludesIt() throws IOException {
+        writeIndex(List.of("a.jpg", "b.jpg", "c.jpg"), new float[][]{
+                unit(1, 0, 0), unit(0.9f, 0.1f, 0), unit(0, 1, 0)});
+        EmbeddingIndex index = new EmbeddingIndex(dir.toString(), objectMapper);
+
+        assertThat(index.similar("a.jpg", 2, key -> true))
+                .extracting(EmbeddingIndex.Hit::key).containsExactly("b.jpg", "c.jpg");
+        assertThatThrownBy(() -> index.similar("missing.jpg", 2, key -> true))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void rejectsQueryWithWrongDimension() throws IOException {
         writeIndex(List.of("a.jpg"), new float[][]{unit(1, 0, 0)});
         EmbeddingIndex index = new EmbeddingIndex(dir.toString(), objectMapper);

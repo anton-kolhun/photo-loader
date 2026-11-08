@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Map;
@@ -31,7 +34,7 @@ public class ImageController {
             @RequestParam(value = "height", required = false) Integer height,
             @RequestParam(value = "width", required = false) Integer width,
             @RequestParam(value = "quality", required = false) Quality quality,
-            HttpSession httpSession, @RequestHeader Map<String, String> headers) {
+            HttpSession httpSession, @RequestHeader Map<String, String> headers, HttpServletResponse response) {
         ImageCharacteristics imageMetaData;
         if (!headers.get("user-agent").toLowerCase().contains("mobile")) {
             imageMetaData = ImageCharacteristics.builder()
@@ -60,6 +63,9 @@ public class ImageController {
             cursor.setCurrentCursor(cursor.getCurrentCursor() - 1);
         }
         byte[] image = imageProcessorService.fetchRandomImage(cursor, year, imageMetaData);
+        // which photo this is (e.g. "2019/IMG_123.jpg"): the page shows its year and offers "similar photos"
+        String key = cursor.getSeenImages().get(cursor.getCurrentCursor() - 1);
+        response.setHeader("X-Photo-Key", URLEncoder.encode(key, StandardCharsets.UTF_8).replace("+", "%20"));
         return Base64.getEncoder().encodeToString(image);
     }
 

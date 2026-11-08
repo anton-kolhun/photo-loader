@@ -11,10 +11,12 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -29,7 +31,7 @@ public class EmbeddingIndex {
     private final String model;
     private final int dim;
     private final List<String> keys;
-    private final Set<String> keySet;
+    private final Map<String, Integer> rowByKey;
     private final float[] vectors; // row-major, keys.size() x dim, rows L2-normalised
 
     public EmbeddingIndex(@Value("${clip.index.dir}") String indexDir, ObjectMapper objectMapper) throws IOException {
@@ -45,7 +47,11 @@ public class EmbeddingIndex {
         this.model = meta.model();
         this.dim = meta.dim();
         this.keys = List.copyOf(meta.keys());
-        this.keySet = Set.copyOf(meta.keys());
+        Map<String, Integer> rows = new HashMap<>();
+        for (int row = 0; row < keys.size(); row++) {
+            rows.put(keys.get(row), row);
+        }
+        this.rowByKey = Map.copyOf(rows);
         log.info("loaded CLIP index: {} photos, dim {}, model {}", keys.size(), dim, model);
     }
 
@@ -54,7 +60,7 @@ public class EmbeddingIndex {
     }
 
     public boolean contains(String key) {
-        return keySet.contains(key);
+        return rowByKey.containsKey(key);
     }
 
     /** Top {@code limit} photos by cosine similarity (dot product of unit vectors) among keys passing the filter. */
@@ -81,6 +87,16 @@ public class EmbeddingIndex {
         List<Hit> result = new ArrayList<>(top);
         result.sort(Comparator.comparingDouble(Hit::score).reversed());
         return result;
+    }
+
+    /** Photos that look most like {@code key}: its own embedding is the query, so no text encoder is needed. */
+    public List<Hit> similar(String key, int limit, Predicate<String> keyFilter) {
+        Integer row = rowByKey.get(key);
+        if (row == null) {
+            throw new IllegalArgumentException("photo not in index: " + key);
+        }
+        float[] query = Arrays.copyOfRange(vectors, row * dim, (row + 1) * dim);
+        return search(query, limit, keyFilter.and(other -> !other.equals(key)));
     }
 
     public record Hit(String key, float score) {

@@ -8,11 +8,12 @@
     <script src="js/jquery.js" type="text/javascript"></script>
 
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/slideshow.js?v=2"></script>
 
 </head>
 
 <body>
-<div class="container">
+<div class="container-fluid">
     <div w3-include-html="body.html"></div>
 </div>
 </body>
@@ -49,83 +50,10 @@
         }
     }
 
-    function loadImage(direction) {
-        $('#loaderForward').prop('disabled', true);
-        $('#loaderBackward').prop('disabled', true);
-        $('#spinner').css('visibility', 'visible');
-        var year = $('#year').val();
-        var url = 'image';
-        url = url + '?height=' + window.screen.height;
-        url = url + '&width=' + window.screen.width;
-        if (year !== undefined) {
-            url = url + '&year=' + year;
-        }
-        let quality = $('#quality').val();
-        if (quality !== undefined) {
-            url = url + '&quality=' + quality;
-        }
-        if (direction !== undefined) {
-            url = url + '&direction=' + direction;
-        }
-        $.get(url, function (data, status) {
-            if (data.includes('login')) {
-                location.href = 'login'
-            }
-            $('#img').attr("src", 'data:image/png;base64, ' + data);
-            $('#loaderForward').prop('disabled', false);
-            $('#loaderBackward').prop('disabled', false);
-            $('#spinner').css('visibility', 'hidden');
-        })
-            .fail(function () {
-                $('#loaderForward').prop('disabled', false);
-                $('#loaderBackward').prop('disabled', false);
-                $('#spinner').css('visibility', 'hidden');
-            })
-    }
-
-    // show the search link only when the server has search enabled (clip.search.enabled)
-    function showSearchLinkIfEnabled() {
-        $.ajax({url: 'search', method: 'HEAD'}).done(function () {
-            const show = () => $('#searchLink').length ? $('#searchLink').show() : setTimeout(show, 100);
-            show();
-        });
-    }
-
-    // same as clicking the on-photo arrows; ignored while a photo is still loading
-    function navigate(direction) {
-        const arrow = direction === 'NEXT' ? '#loaderForward' : '#loaderBackward';
-        if ($(arrow).length && !$(arrow).prop('disabled')) {
-            loadImage(direction);
-        }
-    }
-
-    // ← / → keys (but not while a dropdown has focus: there the arrows change its value)
-    $(document).on('keydown', function (e) {
-        if ($(e.target).is('select, input, textarea')) return;
-        if (e.key === 'ArrowRight') { e.preventDefault(); navigate('NEXT'); }
-        if (e.key === 'ArrowLeft') { e.preventDefault(); navigate('PREVIOUS'); }
-    });
-
-    // swipe left / right on touch screens
-    let touchStartX = null, touchStartY = null;
-    $(document).on('touchstart', '#img_holder', function (e) {
-        touchStartX = e.originalEvent.touches[0].clientX;
-        touchStartY = e.originalEvent.touches[0].clientY;
-    });
-    $(document).on('touchend', '#img_holder', function (e) {
-        if (touchStartX === null) return;
-        const dx = e.originalEvent.changedTouches[0].clientX - touchStartX;
-        const dy = e.originalEvent.changedTouches[0].clientY - touchStartY;
-        touchStartX = null;
-        if (Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) { // mostly horizontal, not a scroll
-            navigate(dx < 0 ? 'NEXT' : 'PREVIOUS');
-        }
-    });
 
     $(document).ready(function () {
         includeHTML();
-        setTimeout(loadImage, 200);
-        showSearchLinkIfEnabled();
+        startSlideshow();
     });
 </script>
 </html>
