@@ -14,6 +14,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -39,6 +43,12 @@ public class ImageProcessorService {
 
     public static final Integer DEFAULT_WIDTH = 900;
 
+    /** Screen-sized sizes are rounded up to this step, so the many device sizes share a few cache buckets. */
+    static final int SIZE_STEP = 200;
+
+    /** Final, screen-sized JPEGs: cache/screen/<width>x<height>-<quality>/<photo key> */
+    private Path screenCacheDir = Path.of(S3Manager.CACHE_FOLDER_NAME, "screen");
+
 
     public byte[] fetchRandomImage(ImageSessionCursor cursor, String year, ImageCharacteristics metaData) {
         List<String> allFiles = s3Manager.getAllFilesInBucket();
@@ -60,18 +70,45 @@ public class ImageProcessorService {
         } else {
             fileName = cursor.getSeenImages().get(cursor.getCurrentCursor() - 1);
         }
-        long start = System.currentTimeMillis();
-        byte[] downloadedFile = s3Manager.downloadFile(fileName);
-        long end = System.currentTimeMillis();
-        log.debug("image {} downloading time =  {}ms", fileName, end - start);
-        ImageCharacteristics adjustedMetaData = ImageCharacteristics.builder()
-                .height(metaData.getHeight().map(val -> (int) (val * 0.75)).orElse(DEFAULT_HEIGHT))
-                .width(metaData.getWidth().map(val -> (int) (val * 0.75)).orElse(DEFAULT_WIDTH))
-                .quality(metaData.getQuality().orElse(Quality.MEDIUM))
-                .build();
-        byte[] resized = imageResizer.resizeImage(downloadedFile, adjustedMetaData, fileName);
-        return resized;
+        return screenSized(fileName,
+                metaData.getWidth().map(val -> roundUp((int) (val * 0.75))).orElse(DEFAULT_WIDTH),
+                metaData.getHeight().map(val -> roundUp((int) (val * 0.75))).orElse(DEFAULT_HEIGHT),
+                metaData.getQuality().orElse(Quality.MEDIUM));
+    }
 
+    /**
+     * The photo resized for a screen. Built once per photo, size bucket and quality, then served from disk:
+     * re-decoding and re-encoding the photo on every view cost ~140 ms of CPU on the server.
+     */
+    byte[] screenSized(String fileName, int width, int height, Quality quality) {
+        Path cached = screenCacheDir.resolve(width + "x" + height + "-" + quality).resolve(fileName);
+        try {
+            if (Files.exists(cached)) {
+                return Files.readAllBytes(cached);
+            }
+            long start = System.currentTimeMillis();
+            byte[] photo = s3Manager.downloadFile(fileName); // full-quality copy, itself cached in cache/
+            byte[] resized = imageResizer.resizeImage(photo, ImageCharacteristics.builder()
+                    .width(width).height(height).quality(quality).build(), fileName);
+            Files.createDirectories(cached.getParent());
+            // write to a temp file then rename, so a concurrent request never reads a half-written image
+            Path tmp = Files.createTempFile(cached.getParent(), ".resizing-", ".tmp");
+            Files.write(tmp, resized);
+            Files.move(tmp, cached, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            log.debug("image {} prepared for {}x{} {} in {} ms", fileName, width, height, quality,
+                    System.currentTimeMillis() - start);
+            return resized;
+        } catch (IOException e) {
+            throw new RuntimeException("Error preparing image " + fileName, e);
+        }
+    }
+
+    static int roundUp(int size) {
+        return Math.max(SIZE_STEP, (size + SIZE_STEP - 1) / SIZE_STEP * SIZE_STEP);
+    }
+
+    void setScreenCacheDir(Path screenCacheDir) { // tests
+        this.screenCacheDir = screenCacheDir;
     }
 
     private int calculateAvailableIndex(ImageSessionCursor imageSessionCursor, String year, List<String> allFiles) {
