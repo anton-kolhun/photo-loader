@@ -28,3 +28,10 @@
 
 #project
 /cache/
+# clip-search: generated artefacts (rebuild with export_text_encoder.py / embed_images.py)
+clip-search/.venv/
+clip-search/.image-cache/
+clip-search/index/
+clip-search/lambda/model/
+__pycache__/
+.aws-sam/

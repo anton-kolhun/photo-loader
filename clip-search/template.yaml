@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: CLIP text encoder for photo-loader text-to-image search
+
+Resources:
+  ClipTextEncoder:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: clip-text-encoder
+      PackageType: Image
+      Architectures: [arm64]
+      MemorySize: 2048   # Lambda CPU scales with memory: ~1.2 vCPU for the fp32 model
+      Timeout: 30        # the first cold start after a deploy (uncached image) can take ~20 s; later ones ~2 s
+      LoggingConfig:
+        LogGroup: !Ref ClipTextEncoderLogs
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: ./lambda
+      DockerTag: vit-b-32-openai-fp32
+
+  ClipTextEncoderLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/clip-text-encoder
+      RetentionInDays: 14
+
+Outputs:
+  FunctionArn:
+    Description: Grant lambda:InvokeFunction on this ARN to photo-webapp's AWS identity
+    Value: !GetAtt ClipTextEncoder.Arn

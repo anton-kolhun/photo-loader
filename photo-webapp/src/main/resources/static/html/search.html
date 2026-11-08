@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Пошук фото</title>
+    <link rel="icon" type="image/x-icon" href="favicon.png">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
+    <script src="js/jquery.js" type="text/javascript"></script>
+    <style>
+        body { padding: 16px 0; }
+        .search-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .search-bar input { flex: 1 1 260px; font-size: 20px; height: 54px; }
+        .search-bar select, .search-bar button, .search-bar a { height: 54px; font-size: 18px; }
+        #status { min-height: 24px; color: #6c757d; margin-bottom: 8px; }
+        #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+        #results figure { margin: 0; cursor: zoom-in; position: relative; aspect-ratio: 1; background: #f1f3f5; }
+        #results img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+        #results figcaption { position: absolute; left: 4px; bottom: 4px; padding: 0 6px; font-size: 12px;
+            color: #fff; background: rgba(0, 0, 0, .55); border-radius: 3px; }
+        #viewer { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, .92); z-index: 1000;
+            align-items: center; justify-content: center; }
+        #viewer img { max-width: 96vw; max-height: 90vh; }
+        #viewer .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); font-size: 40px; color: #fff;
+            background: none; border: 0; padding: 16px; }
+        #viewer .close-btn { position: absolute; top: 8px; right: 16px; font-size: 36px; color: #fff;
+            background: none; border: 0; }
+        #viewer .caption { position: absolute; bottom: 12px; color: #ddd; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <form class="search-bar" id="searchForm">
+        <input id="query" class="form-control" type="search" autocomplete="off" autofocus
+               placeholder="Search in English, e.g. family and a dog">
+        <select id="year" class="form-select" style="width:auto">
+            <option value="">Всі роки</option>
+            <option>2026</option><option>2025</option><option>2024</option><option>2023</option>
+            <option>2022</option><option>2021</option><option>2020</option><option>2019</option>
+            <option>2018</option><option>2017</option><option>2016</option><option>2015</option>
+            <option>2014</option><option>2013</option><option value="RETRO">RETRO</option>
+        </select>
+        <button class="btn btn-primary" type="submit">Шукати</button>
+        <a class="btn btn-outline-secondary" href="./">Слайдшоу</a>
+    </form>
+    <div id="status"></div>
+    <div id="results"></div>
+</div>
+
+<div id="viewer">
+    <button class="close-btn" title="Закрити">&times;</button>
+    <button class="nav-btn" id="prev" style="left:8px" title="Попереднє">&#10094;</button>
+    <img id="viewerImg" alt="">
+    <button class="nav-btn" id="next" style="right:8px" title="Наступне">&#10095;</button>
+    <div class="caption" id="viewerCaption"></div>
+</div>
+
+<script type="text/javascript">
+    let hits = [];
+    let current = -1;
+    let lastWarmup = 0;
+
+    // A cold Lambda needs a second or two to load CLIP; start that while the user is still typing.
+    function warmup() {
+        if (Date.now() - lastWarmup > 4 * 60 * 1000) {
+            lastWarmup = Date.now();
+            $.get('search/warmup');
+        }
+    }
+
+    function search() {
+        const q = $('#query').val().trim();
+        if (!q) return;
+        const year = $('#year').val();
+        history.replaceState(null, '', '?q=' + encodeURIComponent(q) + (year ? '&year=' + year : ''));
+        $('#status').text('Шукаю…');
+        $('#results').empty();
+        $.getJSON('search/api', {q: q, year: year || undefined, limit: 60})
+            .done(function (data, status, xhr) {
+                if (typeof data === 'string' || (xhr.responseText || '').includes('<html')) {
+                    location.href = 'login';  // session expired: the login page came back instead of JSON
+                    return;
+                }
+                hits = data;
+                $('#status').text(hits.length ? '' : 'Нічого не знайдено');
+                hits.forEach(function (hit, i) {
+                    const fig = $('<figure>').attr('title', hit.key).on('click', () => openViewer(i));
+                    $('<img loading="lazy">').attr('alt', hit.key)
+                        .attr('src', 'search/thumbnail?key=' + encodeURIComponent(hit.key)).appendTo(fig);
+                    $('<figcaption>').text(hit.key.split('/')[0]).appendTo(fig);
+                    $('#results').append(fig);
+                });
+            })
+            .fail(function (xhr) {
+                $('#status').text('Помилка пошуку: ' + ((xhr.responseJSON && xhr.responseJSON.message) || xhr.status));
+            });
+    }
+
+    function openViewer(i) {
+        if (i < 0 || i >= hits.length) return;
+        current = i;
+        $('#viewerImg').attr('src', 'search/photo?key=' + encodeURIComponent(hits[i].key));
+        $('#viewerCaption').text(`${i + 1} / ${hits.length} · ${hits[i].key}`);
+        $('#viewer').css('display', 'flex');
+    }
+
+    function closeViewer() {
+        $('#viewer').hide();
+        $('#viewerImg').attr('src', '');
+        current = -1;
+    }
+
+    $(function () {
+        $('#query').on('focus input', warmup);
+        $('#searchForm').on('submit', function (e) { e.preventDefault(); search(); });
+        $('#year').on('change', search);
+        $('#prev').on('click', e => { e.stopPropagation(); openViewer(current - 1); });
+        $('#next').on('click', e => { e.stopPropagation(); openViewer(current + 1); });
+        $('#viewer').on('click', e => { if (e.target.id !== 'viewerImg') closeViewer(); });
+        $(document).on('keydown', function (e) {
+            if (current < 0) return;
+            if (e.key === 'Escape') closeViewer();
+            if (e.key === 'ArrowLeft') openViewer(current - 1);
+            if (e.key === 'ArrowRight') openViewer(current + 1);
+        });
+        // restore a search from the URL (shareable / survives reload)
+        const params = new URLSearchParams(location.search);
+        if (params.get('q')) {
+            $('#query').val(params.get('q'));
+            $('#year').val(params.get('year') || '');
+            search();
+        }
+    });
+</script>
+</body>
+</html>
