@@ -75,7 +75,6 @@
         history.replaceState(null, '', '?q=' + encodeURIComponent(q) + (year ? '&year=' + year : ''));
         $('#status').text('Шукаю…');
         $('#results').empty();
-        const started = performance.now();
         $.getJSON('search/api', {q: q, year: year || undefined, limit: 60})
             .done(function (data, status, xhr) {
                 if (typeof data === 'string' || (xhr.responseText || '').includes('<html')) {
@@ -83,9 +82,7 @@
                     return;
                 }
                 hits = data;
-                const secs = ((performance.now() - started) / 1000).toFixed(1);
-                $('#status').text(hits.length ? `Знайдено ${hits.length} фото за ${secs} с — найкращі збіги першими`
-                                              : 'Нічого не знайдено');
+                $('#status').text(hits.length ? '' : 'Нічого не знайдено');
                 hits.forEach(function (hit, i) {
                     const fig = $('<figure>').attr('title', hit.key).on('click', () => openViewer(i));
                     $('<img loading="lazy">').attr('alt', hit.key)
