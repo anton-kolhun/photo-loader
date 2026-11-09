@@ -70,6 +70,11 @@ public class ImageProcessorService {
         } else {
             fileName = cursor.getSeenImages().get(cursor.getCurrentCursor() - 1);
         }
+        return forScreen(fileName, metaData);
+    }
+
+    /** A photo as the slideshow shows it on this device; also used by the search viewer so both look the same. */
+    public byte[] forScreen(String fileName, ImageCharacteristics metaData) {
         return screenSized(fileName,
                 metaData.getWidth().map(val -> roundUp((int) (val * 0.75))).orElse(DEFAULT_WIDTH),
                 metaData.getHeight().map(val -> roundUp((int) (val * 0.75))).orElse(DEFAULT_HEIGHT),

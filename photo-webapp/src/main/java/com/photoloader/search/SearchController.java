@@ -1,10 +1,13 @@
 package com.photoloader.search;
 
+import com.photoloader.service.bean.ImageCharacteristics;
+import com.photoloader.service.bean.Quality;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -53,9 +56,14 @@ public class SearchController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Same image as the slideshow: the page sends the screen size; phones get the shared mobile size. */
     @GetMapping("search/photo")
-    public ResponseEntity<byte[]> photo(@RequestParam("key") String key) {
-        return image(searchService.photo(key));
+    public ResponseEntity<byte[]> photo(@RequestParam("key") String key,
+                                        @RequestParam(value = "width", required = false) Integer width,
+                                        @RequestParam(value = "height", required = false) Integer height,
+                                        @RequestParam(value = "quality", required = false) Quality quality,
+                                        @RequestHeader(value = "User-Agent", required = false) String userAgent) {
+        return image(searchService.photo(key, ImageCharacteristics.forDevice(userAgent, width, height, quality)));
     }
 
     @GetMapping("search/thumbnail")

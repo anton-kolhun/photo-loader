@@ -1,5 +1,6 @@
 package com.photoloader.service;
 
+import com.photoloader.service.bean.ImageCharacteristics;
 import com.photoloader.service.bean.Quality;
 import com.photoloader.service.helper.ImageResizer;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +55,18 @@ class ImageProcessorServiceTest {
         service.screenSized("2020/a.jpg", 600, 800, Quality.MEDIUM);
 
         verify(imageResizer, times(3)).resizeImage(any(), any(), eq("2020/a.jpg"));
+    }
+
+    @Test
+    void devicesMapToTheSharedCacheBuckets() throws Exception {
+        String mac = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15";
+        String iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148";
+
+        service.forScreen("2020/a.jpg", ImageCharacteristics.forDevice(mac, 1512, 982, null));
+        service.forScreen("2020/a.jpg", ImageCharacteristics.forDevice(iphone, 393, 852, null));
+
+        assertThat(cacheDir.resolve("1200x800-MEDIUM/2020/a.jpg")).exists();  // MacBook: 75% of screen, rounded up
+        assertThat(cacheDir.resolve("900x1500-MEDIUM/2020/a.jpg")).exists(); // every phone shares one size
     }
 
     @Test
