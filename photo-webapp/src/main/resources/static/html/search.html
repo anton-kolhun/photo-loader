@@ -20,7 +20,8 @@
             color: #fff; background: rgba(0, 0, 0, .55); border-radius: 3px; }
         #viewer { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, .92); z-index: 1000;
             align-items: center; justify-content: center; }
-        #viewer img { max-width: 96vw; max-height: 90vh; }
+        /* fill the screen like the slideshow does (the image itself is screen-sized by the server) */
+        #viewer img { width: 100vw; height: 100vh; height: 100dvh; object-fit: contain; }
         #viewer .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); font-size: 40px; color: #fff;
             background: none; border: 0; padding: 16px; }
         #viewer .close-btn { position: absolute; top: 8px; right: 16px; font-size: 36px; color: #fff;
@@ -130,7 +131,9 @@
     function openViewer(i) {
         if (i < 0 || i >= hits.length) return;
         current = i;
-        $('#viewerImg').attr('src', 'search/photo?key=' + encodeURIComponent(hits[i].key));
+        // same size as the slideshow requests, so both show the same (already cached) image
+        $('#viewerImg').attr('src', 'search/photo?key=' + encodeURIComponent(hits[i].key)
+            + '&width=' + window.screen.width + '&height=' + window.screen.height);
         $('#viewerCaption').text(`${i + 1} / ${hits.length} · ${hits[i].key}`);
         $('#viewer').css('display', 'flex');
     }
@@ -148,7 +151,8 @@
         $('#prev').on('click', e => { e.stopPropagation(); openViewer(current - 1); });
         $('#next').on('click', e => { e.stopPropagation(); openViewer(current + 1); });
         $('#viewerSimilar').on('click', e => { e.stopPropagation(); findSimilar(hits[current].key); });
-        $('#viewer').on('click', e => { if (e.target.id !== 'viewerImg') closeViewer(); });
+        // the photo fills the viewer, so a tap anywhere but the buttons closes it (a swipe is not a tap)
+        $('#viewer').on('click', e => { if (!$(e.target).closest('button').length) closeViewer(); });
         $(document).on('keydown', function (e) {
             if (current < 0) return;
             if (e.key === 'Escape') closeViewer();

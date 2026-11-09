@@ -1,6 +1,7 @@
 package com.photoloader.search;
 
 import com.photoloader.exception.NotFoundException;
+import com.photoloader.service.ImageProcessorService;
 import com.photoloader.service.S3Manager;
 import com.photoloader.service.bean.ImageCharacteristics;
 import com.photoloader.service.bean.Quality;
@@ -28,6 +29,7 @@ public class SearchService {
     private static final Path THUMBNAIL_CACHE = Path.of(S3Manager.CACHE_FOLDER_NAME, "search-thumbnails");
 
     private final Path prebuiltThumbnails;
+    private final ImageProcessorService imageProcessorService;
 
     private final EmbeddingIndex index;
     private final TextEmbeddingClient textEmbeddingClient;
@@ -37,9 +39,10 @@ public class SearchService {
     private final Semaphore resizePermits = new Semaphore(2);
 
     public SearchService(EmbeddingIndex index, TextEmbeddingClient textEmbeddingClient,
-                         S3Manager s3Manager, ImageResizer imageResizer,
+                         S3Manager s3Manager, ImageResizer imageResizer, ImageProcessorService imageProcessorService,
                          @Value("${clip.index.dir}") String indexDir) {
         this.prebuiltThumbnails = Path.of(indexDir, "thumbnails");
+        this.imageProcessorService = imageProcessorService;
         this.index = index;
         this.textEmbeddingClient = textEmbeddingClient;
         this.s3Manager = s3Manager;
@@ -64,10 +67,10 @@ public class SearchService {
         textEmbeddingClient.warmup();
     }
 
-    /** Screen-sized photo for the viewer; the same cached, resized file the slideshow serves. */
-    public byte[] photo(String key) {
+    /** The photo exactly as the slideshow would show it on this device (same size, quality and disk cache). */
+    public byte[] photo(String key, ImageCharacteristics device) {
         requireSearchable(key);
-        return withResizePermit(() -> s3Manager.downloadFile(key));
+        return imageProcessorService.forScreen(key, device);
     }
 
     /**

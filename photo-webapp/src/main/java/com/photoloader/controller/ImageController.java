@@ -35,18 +35,7 @@ public class ImageController {
             @RequestParam(value = "width", required = false) Integer width,
             @RequestParam(value = "quality", required = false) Quality quality,
             HttpSession httpSession, @RequestHeader Map<String, String> headers, HttpServletResponse response) {
-        ImageCharacteristics imageMetaData;
-        if (!headers.get("user-agent").toLowerCase().contains("mobile")) {
-            imageMetaData = ImageCharacteristics.builder()
-                    .height(height)
-                    .width(width)
-                    .quality(quality)
-                    .build();
-        } else {
-            imageMetaData = ImageCharacteristics.builder()
-                    .quality(quality)
-                    .build();
-        }
+        ImageCharacteristics imageMetaData = ImageCharacteristics.forDevice(headers.get("user-agent"), width, height, quality);
         ImageSessionCursor cursor = (ImageSessionCursor) httpSession.getAttribute("sessionInfo");
         if (cursor == null) {
             cursor = new ImageSessionCursor(httpSession.getId(), new ArrayList<>(), 0, year);
